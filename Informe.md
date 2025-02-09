@@ -1,9 +1,10 @@
 # Soluciones Algorítmicas al Problema de Optimización Multivía para Flotas de Transporte  
 
 **Autores**: 
-	- Daniel Angel Arró Moreno
-	- Pedro Pablo Álvarez Portelles
-	- Abel Llerena Domingo
+- Daniel Angel Arró Moreno
+- Pedro Pablo Álvarez Portelles
+- Abel Llerena Domingo
+
 **Institución**: Universidad de la Habana
 
 ---
