@@ -280,8 +280,97 @@ Nivel 2: Asignar T3
    - Poda agresiva por cotas inferiores
 
 
-### 2.2 Optimización
+### 2.2 Programación Dinámica sobre Subconjuntos (Held-Karp Modificado)
 
+#### 2.2.1. Descripción de la Solución
+
+Esta solución aplica programación dinámica para resolver la versión restringida del problema de asignación de rutas. Se modela el problema utilizando una relación recursiva sobre subconjuntos de paradas visitadas, similar al enfoque de Held-Karp para el _Traveling Salesman Problem (TSP)_, pero incorporando restricciones adicionales como capacidad de los vehículos y tiempos de recogida y entrega.
+
+#### 2.2.2. Precomputación de Distancias y Tiempos
+
+Dado que el problema requiere calcular rutas óptimas entre múltiples puntos de recogida y entrega, es necesario precomputar las distancias mínimas entre todas las paradas. Para esto, se utiliza el algoritmo de **Floyd-Warshall**, que permite obtener la matriz de distancias y tiempos óptimos entre cualquier par de puntos en $O(n^3)$.
+
+1. **Construcción de la matriz de adyacencia**:
+    
+    - Se representa la red de viajes como un grafo dirigido, donde cada parada (punto de recogida o entrega) es un nodo.
+    - Las aristas representan la distancia y el tiempo de viaje entre paradas, dependiendo de las condiciones del tráfico y la disponibilidad de rutas.
+    - Si no existe una conexión directa entre dos paradas, la distancia se inicializa en infinito.
+2. **Aplicación del algoritmo de Floyd-Warshall**:
+    
+    - Se ejecuta en $O(n^3)$ para actualizar todas las distancias mínimas entre pares de nodos.
+    - También se obtiene la matriz de tiempos mínimos necesarios para viajar entre cualquier par de puntos.
+
+Este preprocesamiento permite que, durante la ejecución del algoritmo principal, las consultas de distancia y tiempo se realicen en $O(1)$, optimizando el rendimiento en instancias grandes.
+
+#### 2.2.3. Enfoque de Held-Karp
+
+El enfoque de _Held-Karp_ es una técnica de programación dinámica utilizada para resolver el _Problema del Viajante_ (TSP) en $O(2^n \cdot n^2)$. Se basa en construir soluciones óptimas para subconjuntos de ciudades y luego combinarlas de manera eficiente.
+
+Para el problema clásico del TSP, la relación de recurrencia es:
+
+$C(S,i)=min⁡j∈S−{i}{C(S−{i},j)+d(j,i)}C(S, i) = \min_{j \in S - \{i\}} \{C(S - \{i\}, j) + d(j, i)\}$
+
+donde:
+
+- $C(S, i)$ representa el costo mínimo de visitar todas las ciudades en $S$ y terminar en la ciudad $i$.
+- $d(j, i)$ es la distancia entre las ciudades $j$ e $i$.
+
+Nuestro problema extiende este enfoque al considerar restricciones operativas como ventanas de tiempo y capacidad de los vehículos.
+
+#### 2.2.4. Definición de la Recurrencia Modificada
+
+Sea $C(S, i)$ el costo mínimo de visitar todas las paradas en $S$ terminando en la parada $i$, donde $S$ es un subconjunto de las paradas visitadas. La relación de recurrencia adaptada es:
+
+$C(S,i)=min⁡j∈S−{i}{C(S−{i},j)+d(j,i)}C(S, i) = \min_{j \in S - \{i\}} \{C(S - \{i\}, j) + d(j, i)\}$
+
+donde:
+
+- $C(S, i)$ representa el costo mínimo de visitar todas las paradas en $S$ y finalizar en $i$.
+- $d(j, i)$ es la distancia entre las paradas $j$ e $i$, previamente calculada con Floyd-Warshall.
+- Se verifica que la ruta sea factible en términos de velocidad y capacidad antes de actualizar $C(S, i)$.
+
+#### 2.2.5. Casos Base
+
+El caso base ocurre cuando $S$ contiene solo la parada inicial $x$, que está conectada a todas las paradas de entrega con costo 0:
+
+$C({x},x)=0C(\{x\}, x) = 0$
+
+#### 2.2.6. Construcción de la Solución
+
+1. **Preprocesamiento**: Se ejecuta **Floyd-Warshall en $O(n^3)$** para obtener la matriz de distancias y tiempos mínimos entre paradas.
+2. **Iteración sobre subconjuntos**: Se recorre el tamaño del conjunto de paradas visitadas $k$ desde $2$ hasta $n$.
+3. **Cálculo de costos mínimos**: Para cada subconjunto $S$ de tamaño $k-1$, se evalúa $C(S, i)$ para cada parada $i$ en $S$.
+4. **Verificación de restricciones**:
+    - **Requisito de velocidad**: Se calcula la velocidad mínima requerida en cada tramo de la ruta:
+        
+        $vnew=max⁡{vold,vnecesaria(i→i+1)}v_{\text{new}} = \max\{v_{\text{old}}, v_{\text{necesaria}}(i \rightarrow i+1)\}$
+        
+        Si no es posible respetar los tiempos establecidos, la ruta no se actualiza.
+        
+    - **Requisito de capacidad**: Se asegura que la cantidad de pasajeros transportados no excede la capacidad del vehículo en ningún momento.
+        
+5. **Asignación de rutas a vehículos**: Se resuelve mediante un algoritmo de **mochila para múltiples mochilas**, donde cada mochila representa un vehículo y los elementos son los viajes asignados.
+
+#### 2.2.7. Correctitud de la Solución
+
+La correctitud de este método se basa en:
+
+- **Explorar todas las combinaciones válidas** de viajes mediante la recurrencia.
+- **Asegurar la optimalidad** en cada paso, manteniendo la mejor solución posible para cada subconjunto.
+- **Respetar las restricciones operativas** mediante validaciones antes de actualizar la función de costo.
+
+#### 2.2.8. Complejidad Temporal
+
+La complejidad total del algoritmo se compone de:
+
+- **Precomputación de distancias y tiempos con Floyd-Warshall**: $O(n^3)$
+- **Algoritmo de programación dinámica (Held-Karp modificado)**: $O(2^n \cdot n^2)$
+
+Por lo tanto, la complejidad final es:
+
+$O(n3+2n⋅n2)=O(2n⋅n2)$(ya que el teˊrmino exponencial domina)$O(n^3 + 2^n \cdot n^2) = O(2^n \cdot n^2) \quad \text{(ya que el término exponencial domina)}$
+
+Este enfoque es óptimo para instancias pequeñas o medianas $(n≤20n \leq 20)$, pero se vuelve impráctico para valores grandes de nn. Para escalabilidad, se recomienda utilizar heurísticas o soluciones híbridas.
 
 
 ### 2.3 Ramificación y Acotación (B&B)
@@ -314,7 +403,7 @@ def branch_and_bound_dijkstra(trips, vehicle, route_matrix, locations):
 ```
 
 ##### 2.3.1.2 Flujo Detallado
-1. **Inicialización de la matriz de rutas**:
+6. **Inicialización de la matriz de rutas**:
    - Crea un nodo ficticio de inicio (start_node)
    - Modifica la matriz de distancias para incluir conexiones especiales:
      ```python
@@ -322,14 +411,14 @@ def branch_and_bound_dijkstra(trips, vehicle, route_matrix, locations):
      new_route_matrix[i][start_node_index] = RouteMatrixCell(Distance=1e9, ...)  # Bloquea retornos
      ```
 
-2. **Búsqueda recursiva**:
+7. **Búsqueda recursiva**:
    - Mantiene track de:
      - `path`: Secuencia de nodos visitados
      - `total_cost`: Distancia acumulada
      - `current_time`: Tiempo actual simulado
      - `active_trips`: Viajes en curso
 
-3. **Expansión de nodos**:
+8. **Expansión de nodos**:
    ```python
    for next_location in range(len(locations) - 1):
        if next_location not in path:
@@ -338,7 +427,7 @@ def branch_and_bound_dijkstra(trips, vehicle, route_matrix, locations):
            new_time = current_time + route.DurationSeconds
    ```
 
-4. **Validación de restricciones**:
+9. **Validación de restricciones**:
    ```python
    valid_move = True
    for trip in trips:
@@ -350,7 +439,7 @@ def branch_and_bound_dijkstra(trips, vehicle, route_matrix, locations):
            valid_move = False
    ```
 
-5. **Mecanismo de backtracking**:
+10. **Mecanismo de backtracking**:
    ```python
    if valid_move:
        vehicle.pickup(trip)  # Actualiza estado
@@ -444,9 +533,9 @@ if valid_move:
 ```
 
 **Relación de dominancia**:
-6. Prioriza mayor cantidad de viajes
-7. Entre rutas con mismos viajes, selecciona menor distancia
-8. ⇒ Encuentra el máximo conjunto de viajes con mínima distancia
+11. Prioriza mayor cantidad de viajes
+12. Entre rutas con mismos viajes, selecciona menor distancia
+13. ⇒ Encuentra el máximo conjunto de viajes con mínima distancia
 
 #### 2.3.5. Límites Prácticos
 - **Máximo n viable**: 7 viajes (según implementación)
@@ -492,16 +581,16 @@ def simulated_annealing(trips, vehicles, route_matrix, temp_inicial=1000, enfria
 ```
 
 ##### 2.4.1.2 Flujo Detallado para Múltiples Vehículos
-9. **Representación del estado**:
+14. **Representación del estado**:
    - Lista de rutas por vehículo: `[[ruta_veh1], [ruta_veh2], ...]`
    - Cada ruta es secuencia de viajes con pickup/dropoff
 
-10. **Generación de vecinos**:
+15. **Generación de vecinos**:
    - **Intercambio entre vehículos**: Mover un viaje de un vehículo a otro
    - **Reordenamiento interno**: Swap de dos viajes en misma ruta
    - **Reasignación completa**: Redistribuir viajes no asignados
 
-11. **Función de costo**:
+16. **Función de costo**:
    ```python
    def costo(estado):
        total = 0
@@ -527,10 +616,10 @@ def simulated_annealing(trips, vehicles, route_matrix, temp_inicial=1000, enfria
 ##### 2.4.2.2 Convergencia a Óptimo Global
 **Teorema**: Con programa de enfriamiento adecuado, converge a solución óptima  
 **Prueba** (basada en cadenas de Markov):
-12. **Distribución estacionaria**:
+17. **Distribución estacionaria**:
    - Probabilidad de estar en estado `s` sigue distribución de Boltzmann:
      $P(s) ∝ e^{-costo(s)/T}$
-13. **Condiciones de convergencia**:
+18. **Condiciones de convergencia**:
    - Tasa de enfriamiento: `T_k ≥ K/log(k+1)` (teorema de Hajek)
    - Número infinito de iteraciones → Probabilidad 1 de encontrar óptimo
 
@@ -553,14 +642,14 @@ def simulated_annealing(trips, vehicles, route_matrix, temp_inicial=1000, enfria
 #### 2.4.4. k-Aproximación
 **Teorema**: Bajo enfriamiento logarítmico, es una O(1)-aproximación con alta probabilidad  
 **Prueba** (basada en [Hajek, 1988]):
-14. **Condiciones**:
+19. **Condiciones**:
    - Programa de enfriamiento: `T_k = K/log(k+1)`
    - Espacio de estados finito
 
-15. **Resultado**:
+20. **Resultado**:
    $\lim_{k→∞} P(\text{Encontrar óptimo}) = 1$
    
-16. **En práctica**:
+21. **En práctica**:
    - Para tiempo finito, aproximación depende de parámetros:
      $E[costo(s)] ≤ (1+ε)·OPT \text{ con } ε ∝ 1/\sqrt{N}$
 
@@ -587,20 +676,20 @@ if rand() < 0.5:
   ```
 
 #### 2.4.6. Optimizaciones Clave
-17. **Búsqueda tabú ligera**:
+22. **Búsqueda tabú ligera**:
    ```python
    memoria_corto_plazo = deque(maxlen=10)
    if vecino not in memoria_corto_plazo:
        considerar_aceptacion()
    ```
 
-18. **Reheating controlado**:
+23. **Reheating controlado**:
    ```python
    if sin_mejora_por(100 iteraciones):
        temp = temp*2  # Escapar mínimos locales
    ```
 
-19. **Muestreo por lotes**:
+24. **Muestreo por lotes**:
    ```python
    generar_lote_de_vecinos() → evaluar_en_paralelo()
    ```
@@ -638,13 +727,13 @@ def ant_colony_dijkstra(trips, vehicles, route_matrix, locations, n_ants, n_iter
 ```
 
 ##### 2.5.1.2 Flujo Detallado para Múltiples Vehículos
-20. **Inicialización paralela**:
+25. **Inicialización paralela**:
    - Cada vehículo tiene su propio conjunto de viajes asignables (`trips_available`)
    ```python
    vehicles = [VehicleMultiload(...) for vehicle in input_vehicles]
    ```
 
-21. **Generación concurrente de rutas**:
+26. **Generación concurrente de rutas**:
    ```python
    for i, vehicle in enumerate(vehicles):
        path, cost = generate_path(vehicle)
@@ -652,7 +741,7 @@ def ant_colony_dijkstra(trips, vehicles, route_matrix, locations, n_ants, n_iter
            best_paths[i] = path
    ```
 
-22. **Actualización cooperativa de feromonas**:
+27. **Actualización cooperativa de feromonas**:
    - Las hormigas de diferentes vehículos contribuyen a la misma matriz de feromonas
    ```python
    pheromone[from_city][to_city] += 1.0 / cost  # Para todos los vehículos
@@ -735,20 +824,20 @@ Function build_path(vehicle):
 #### 2.5.4. k-Aproximación
 **Teorema**: El algoritmo es una O(log n)-aproximación  
 **Prueba** (basada en ACO para TSP métrico):
-23. **Propiedad de desigualdad triangular**:
+28. **Propiedad de desigualdad triangular**:
    
    $∀i,j,k: distancia(i,j) ≤ distancia(i,k) + distancia(k,j)$
 
    - Implícita en la matriz de rutas del sistema
 
-24. **Factor de aproximación**:
+29. **Factor de aproximación**:
    - Para TSP métrico, ACO tiene aproximación O(log n) con alta probabilidad
    - Cada ruta de vehículo es un subproblema TSP
    - La unión de rutas mantiene el factor: 
     
      $Σ_{v∈V} costo(v) ≤ O(log n) · OPT$
 
-25. **Adaptación a múltiples vehículos**:
+30. **Adaptación a múltiples vehículos**:
    - La coordinación implícita vía feromonas compartidas
    - La selección greedy probabilística distribuye viajes óptimamente
 
@@ -776,13 +865,13 @@ if vehicle.can_pickup(trip):  # Considera capacidad total y por tipo
   ```
 
 #### 2.5.6. Optimizaciones Clave en el Código
-26. **Memoización de probabilidades**:
+31. **Memoización de probabilidades**:
    ```python
    probabilities = [ (to_city, τ^α * η^β) for to_city in disponibles ]
    ```
    - Precalcula valores para selección rápida
 
-27. **Validación incremental**:
+32. **Validación incremental**:
    ```python
    for trip in vehicle.trips_available.items:
        if needs_pickup_or_dropoff:
@@ -790,7 +879,7 @@ if vehicle.can_pickup(trip):  # Considera capacidad total y por tipo
    ```
    - Complejidad $O(1)$ por viaje usando state tracking
 
-28. **Paralelismo implícito**:
+33. **Paralelismo implícito**:
    ```python
    for i, vehicle in enumerate(vehicles):  # Independiente por vehículo
        generate_path(vehicle)
@@ -817,7 +906,7 @@ def hybrid_bnb_sa(trips, vehicles, threshold=7):
 #### Demostración de Correctitud
 
 ##### Teorema: Preserva las propiedades fundamentales de ambos algoritmos
-29. **Consistencia en restricciones**:
+34. **Consistencia en restricciones**:
    - Ambos algoritmos usan el mismo sistema de validación:
    ```python
    def is_valid(state):
@@ -825,12 +914,12 @@ def hybrid_bnb_sa(trips, vehicles, threshold=7):
                check_capacity_constraints(state))
    ```
    
-30. **Transición segura**:
+35. **Transición segura**:
    - El umbral `threshold=7` garantiza:
      - B&B opera en región de complejidad manejable (O(7!) ≈ 5,040 operaciones)
      - SA se activa antes del punto de explosión combinatoria
 
-31. **Preservación de optimalidad**:
+36. **Preservación de optimalidad**:
    - Para n ≤ threshold: Solución óptima por B&B
    - Para n > threshold: SA explora espacio con garantía de convergencia asintótica
 
@@ -842,27 +931,27 @@ def hybrid_bnb_sa(trips, vehicles, threshold=7):
 | Híbrido       | O(min((n-1)!, k·n²))      | Mejor de ambos casos             |
 
 #### k-Aproximación
-32. **Región B&B**:
+37. **Región B&B**:
    $k = 1 \quad \text{(Solución exacta)}$
 
-33. **Región SA**:
+38. **Región SA**:
    $k = O(\log n) \quad \text{Para grafos métricos (TSP-like)}$
 
-34. **Garantía híbrida**:
+39. **Garantía híbrida**:
    $k_{\text{hibrido}} = \max(1, O(\log n)) = O(\log n)$
 
 #### Ventajas Clave
-35. **Balance eficiencia-calidad**:
+40. **Balance eficiencia-calidad**:
    - Exactitud en casos pequeños (≤7 viajes)
    - Escalabilidad en casos grandes con SA
 
-36. **Mecanismo de transición**:
+41. **Mecanismo de transición**:
    ```python
    if len(trips) > threshold:
        use_metaheuristic()  # Previene tiempo exponencial
    ```
 
-37. **Complementariedad**:
+42. **Complementariedad**:
    - B&B provee cota superior para inicialización de SA
    - SA puede refinar soluciones de B&B en tiempo polinomial
 
@@ -892,8 +981,8 @@ def hybrid_solver(trips, vehicles):
 #### Demostración de Correctitud
 **Teorema**: Preserva las propiedades de ambos algoritmos  
 **Prueba**:
-38. **Consistencia**: Mismo sistema de restricciones en ambos algoritmos
-39. **Transición segura**: El punto de corte (n=7) garantiza:
+43. **Consistencia**: Mismo sistema de restricciones en ambos algoritmos
+44. **Transición segura**: El punto de corte (n=7) garantiza:
    - B&B solo se ejecuta donde puede encontrar solución en tiempo razonable
    - ACO maneja casos donde B&B sería impráctico
 
@@ -948,6 +1037,6 @@ El problema, siendo NP-Hard, requiere equilibrar optimalidad y eficiencia. Para 
 
 
 ## 5. Referencias  
-40. Cormen, T. H. *Introduction to Algorithms*.  
-41. Dorigo, M. *Ant Colony Optimization*.  
-42. Savelsbergh, M. (1985). *Local Search for Routing Problems with Time Windows*.  
+45. Cormen, T. H. *Introduction to Algorithms*.  
+46. Dorigo, M. *Ant Colony Optimization*.  
+47. Savelsbergh, M. (1985). *Local Search for Routing Problems with Time Windows*.  
